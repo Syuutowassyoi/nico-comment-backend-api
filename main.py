@@ -6,23 +6,13 @@ from datetime import datetime, timezone, timedelta
 import os
 import re
 import traceback
-
-app = FastAPI()
-
-# CORS設定（GitHub Pages等からアクセス許可）
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # 必要に応じてドメインを指定
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from contextlib import asynccontextmanager
 
 VIDEO_ID = os.getenv("VIDEO_ID", "sm125732")
 LOG_FILE = "comment_log.json"
 JST = timezone(timedelta(hours=9))  # 日本時間
 
-# コメント数を取得する
+# コメント数を取得
 def fetch_comment_count():
     url = f"https://ext.nicovideo.jp/api/getthumbinfo/{VIDEO_ID}"
     res = requests.get(url)
@@ -34,10 +24,9 @@ def fetch_comment_count():
         print("API response (partial):", res.text[:500])  # デバッグ用
         raise Exception("comment_num not found in API response")
 
-    count = int(match.group(1))
-    return count
+    return int(match.group(1))
 
-# コメント数をログに保存する
+# コメント数をログに保存
 def save_comment_count(count):
     now = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
     if not os.path.exists(LOG_FILE):
@@ -52,22 +41,37 @@ def save_comment_count(count):
     with open(LOG_FILE, "w") as f:
         json.dump(data, f)
 
-# ⭐️ アプリ起動時に1回だけ実行
-@app.on_event("startup")
-def startup_event():
+# ✅ FastAPI 公式推奨の lifespan イベントハンドラー
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 起動時の処理
     try:
         count = fetch_comment_count()
         save_comment_count(count)
-        print(f"Startup fetch success: {count}")
+        print(f"[lifespan] Startup fetch success: {count}")
     except Exception as e:
-        print("Startup fetch failed:", e)
+        print("[lifespan] Startup fetch failed:", e)
+    yield
+    # 終了時の処理（必要あればここに）
 
-# 動作確認用
+# ✅ アプリ本体
+app = FastAPI(lifespan=lifespan)
+
+# CORS設定（GitHub Pagesなどからの呼び出し許可）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 動作確認
 @app.get("/")
 def read_root():
     return {"message": "Nico Comment Backend is running!"}
 
-# コメント数取得＆保存（/update）
+# ✅ コメント数更新（API呼び出し）
 @app.get("/update")
 def update_count():
     try:
@@ -83,7 +87,7 @@ def update_count():
             "trace": traceback.format_exc()
         }
 
-# コメント数の履歴取得（/data）
+# ✅ ログ取得（フロント表示用）
 @app.get("/data")
 def get_data():
     if not os.path.exists(LOG_FILE):
