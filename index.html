@@ -41,10 +41,9 @@
   <canvas id="commentChart"></canvas>
 
   <script>
-    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
+    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app/"; // ← 正しいRailwayのURLに合わせてね
     let lastUpdateTime = null;
 
-    // コメント数とグラフ取得
     async function fetchData() {
       try {
         const response = await fetch(`${apiUrl}/data`);
@@ -55,7 +54,6 @@
         const counts = data.map(item => item.count);
         const latest = counts[counts.length - 1];
 
-        // グラフ描画
         const ctx = document.getElementById('commentChart').getContext('2d');
         new Chart(ctx, {
           type: 'line',
@@ -79,14 +77,13 @@
 
         document.getElementById("latest-count").textContent = latest;
         lastUpdateTime = new Date(labels[labels.length - 1]);
-        updateElapsed(); // 最終更新表示
+        updateElapsed();
       } catch (e) {
         document.getElementById("latest-count").textContent = "取得失敗";
         console.error("データ取得失敗", e);
       }
     }
 
-    // 現在時刻・経過秒数の更新
     function updateClock() {
       const now = new Date();
       document.getElementById("now-time").textContent = now.toLocaleString("ja-JP");
@@ -101,14 +98,12 @@
       }
     }
 
-    // 最終更新の表示
     function updateElapsed() {
       if (lastUpdateTime) {
         document.getElementById("last-update").textContent = lastUpdateTime.toLocaleString("ja-JP");
       }
     }
 
-    // /update 呼び出し
     async function callUpdate() {
       try {
         console.log("🔄 /update 実行");
@@ -116,7 +111,7 @@
         const result = await res.json();
         if (result.status === "success") {
           console.log("✅ 自動更新成功");
-          fetchData(); // 成功したらデータ再取得
+          fetchData();
         } else {
           console.warn("⚠️ /update 失敗:", result.message);
         }
@@ -125,9 +120,8 @@
       }
     }
 
-    // 初回実行
     fetchData();
-    setInterval(updateClock, 1000); // 毎秒チェック
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
