@@ -15,18 +15,18 @@
       font-size: 2em;
       margin-bottom: 1em;
     }
-    canvas {
-      max-width: 600px;
-      margin: 0 auto;
-    }
     .latest {
       font-size: 1.5em;
       margin: 1em 0;
+      color: #d63384;
     }
     .time {
       font-size: 1em;
       color: #555;
-      margin-bottom: 1em;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 2em auto;
     }
   </style>
 </head>
@@ -34,16 +34,16 @@
   <h1>コメント数履歴（sm125732）</h1>
   <div class="latest">最新コメント数：<span id="latest-count">読み込み中...</span></div>
   <div class="time">
-    <div>現在時刻：<span id="current-time">--:--:--</span></div>
-    <div>最終更新：<span id="last-updated">--:--:--</span></div>
-    <div>最終更新から：<span id="elapsed">--</span> 秒経過</div>
+    📅 現在時刻：<span id="current-time">--:--:--</span><br />
+    📦 最終更新：<span id="last-updated">--:--:--</span><br />
+    ⏱ 経過秒数：<span id="elapsed">--</span> 秒
   </div>
   <canvas id="commentChart"></canvas>
 
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app/data";
-    let lastUpdateTime = null;
     let chart = null;
+    let lastUpdateTime = null;
 
     async function fetchData() {
       try {
@@ -51,13 +51,14 @@
         const data = await response.json();
 
         if (!Array.isArray(data) || data.length === 0) {
-          document.getElementById("latest-count").textContent = "取得失敗";
+          document.getElementById("latest-count").textContent = "取得失敗（データなし）";
           return;
         }
 
-        const labels = data.map(item => item.time);
-        const counts = data.map(item => item.count);
+        const labels = data.map(d => d.time);
+        const counts = data.map(d => d.count);
         const latest = counts[counts.length - 1];
+
         lastUpdateTime = new Date(labels[labels.length - 1]);
 
         document.getElementById("latest-count").textContent = latest;
@@ -65,21 +66,17 @@
 
         const ctx = document.getElementById("commentChart").getContext("2d");
 
-        // 既存のグラフがあれば削除
-        if (chart) {
-          chart.destroy();
-        }
-
+        if (chart) chart.destroy();
         chart = new Chart(ctx, {
           type: "line",
           data: {
-            labels: labels,
+            labels,
             datasets: [{
               label: "コメント数",
               data: counts,
-              borderWidth: 2,
               borderColor: "blue",
               backgroundColor: "transparent",
+              borderWidth: 2,
               tension: 0.2
             }]
           },
@@ -90,31 +87,31 @@
             }
           }
         });
-      } catch (e) {
-        console.error("データ取得エラー:", e);
-        document.getElementById("latest-count").textContent = "取得失敗";
+
+      } catch (err) {
+        console.error("取得失敗:", err);
+        document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
       }
     }
 
     function formatDateTime(date) {
-      const pad = n => String(n).padStart(2, '0');
+      const pad = n => String(n).padStart(2, "0");
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
-    function updateCurrentTime() {
+    function updateClock() {
       const now = new Date();
       document.getElementById("current-time").textContent = formatDateTime(now);
 
       if (lastUpdateTime) {
-        const diff = Math.floor((now - lastUpdateTime) / 1000);
-        document.getElementById("elapsed").textContent = diff;
+        const elapsed = Math.floor((now - lastUpdateTime) / 1000);
+        document.getElementById("elapsed").textContent = elapsed;
       }
     }
 
-    // 初回取得と1分おきの再取得
     fetchData();
-    setInterval(fetchData, 60000);
-    setInterval(updateCurrentTime, 1000);
+    setInterval(fetchData, 60000); // 1分ごとに再取得
+    setInterval(updateClock, 1000); // 毎秒現在時刻表示
   </script>
 </body>
 </html>
