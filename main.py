@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from datetime import datetime, timedelta, timezone
 import requests
 import json
@@ -34,8 +35,11 @@ def save_to_spreadsheet(time_str, count):
         spreadsheet_id = os.getenv("SPREADSHEET_ID")
         sheet_name = os.getenv("SHEET_NAME")
 
+        # JST時刻をスプレッドシートにはUTCとして書き込む（Google側表示はJSTになる）
+        utc_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         body = {
-            "values": [[time_str, count]]
+            "values": [[utc_time_str, count]]
         }
 
         result = sheet.values().append(
@@ -108,3 +112,11 @@ def get_data():
         return {"status": "error", "message": "ログファイルが破損しています。"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.on_event("startup")
+async def on_startup():
+    try:
+        await run_in_threadpool(update_count)
+        print("✅ 起動時にコメント数を更新しました")
+    except Exception as e:
+        print(f"❌ 起動時の自動更新失敗: {e}")
