@@ -6,6 +6,8 @@ import requests
 import json
 import os
 import xml.etree.ElementTree as ET
+import asyncio
+import threading
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -120,6 +122,19 @@ def get_data():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# バックグラウンドで1分ごとにupdate_countを実行
+def start_background_update():
+    async def loop_update():
+        while True:
+            try:
+                await run_in_threadpool(update_count)
+                print("✅ 自動更新実行完了")
+            except Exception as e:
+                print(f"❌ 自動更新失敗: {e}")
+            await asyncio.sleep(60)
+
+    threading.Thread(target=lambda: asyncio.run(loop_update()), daemon=True).start()
+
 @app.on_event("startup")
 async def on_startup():
     try:
@@ -127,3 +142,5 @@ async def on_startup():
         print("✅ 起動時にコメント数を更新しました")
     except Exception as e:
         print(f"❌ 起動時の自動更新失敗: {e}")
+
+    start_background_update()
