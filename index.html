@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>ニコニコ動画 コメント数グラフ</title>
+  <meta charset="UTF-8">
+  <title>ニコニコ動画 コメント数</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -49,14 +49,15 @@
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
     let lastUpdateTime = null;
+    let chart = null;
 
     async function fetchData() {
       try {
         const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
 
-        if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1]?.count) {
-          document.getElementById("latest-count").textContent = "取得失敗";
+        if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
+          document.getElementById("latest-count").textContent = "取得失敗（データなし）";
           return;
         }
 
@@ -65,16 +66,16 @@
         const latest = counts[counts.length - 1];
         lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
 
-        document.getElementById("latest-count").textContent = latest;
+        document.getElementById("latest-count").textContent = latest.toLocaleString();
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
         const ctx = document.getElementById("commentChart").getContext("2d");
-        if (window.commentChart) {
-          window.commentChart.data.labels = labels;
-          window.commentChart.data.datasets[0].data = counts;
-          window.commentChart.update();
+        if (chart) {
+          chart.data.labels = labels;
+          chart.data.datasets[0].data = counts;
+          chart.update();
         } else {
-          window.commentChart = new Chart(ctx, {
+          chart = new Chart(ctx, {
             type: "line",
             data: {
               labels: labels,
@@ -82,6 +83,7 @@
                 label: "コメント数",
                 data: counts,
                 borderWidth: 2,
+                borderColor: "blue",
                 fill: false,
                 tension: 0.2
               }]
@@ -89,14 +91,14 @@
             options: {
               responsive: true,
               scales: {
-                y: { beginAtZero: true }
+                y: { beginAtZero: false }
               }
             }
           });
         }
-      } catch (e) {
-        document.getElementById("latest-count").textContent = "取得失敗";
-        console.error("データ取得エラー:", e);
+      } catch (error) {
+        console.error("取得失敗:", error);
+        document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
       }
     }
 
@@ -107,7 +109,7 @@
       });
     }
 
-    function updateClocks() {
+    function updateClock() {
       const now = new Date();
       document.getElementById("current-time").textContent = formatDate(now);
 
@@ -117,17 +119,12 @@
       }
 
       if (now.getSeconds() === 0) {
-        fetch(`${apiUrl}/update`)
-          .then(res => res.json())
-          .then(() => {
-            fetchData();
-          })
-          .catch(e => console.error("更新失敗:", e));
+        fetchData();  // 1分ごとに再取得のみ（/updateはRailway or GitHub Actions）
       }
     }
 
-    fetchData(); // 初回読み込み
-    setInterval(updateClocks, 1000); // 毎秒チェック
+    fetchData();                  // 最初の1回
+    setInterval(updateClock, 1000); // 毎秒チェック
   </script>
 </body>
 </html>
