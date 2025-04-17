@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 
 app = FastAPI()
 
-# ✅ GitHub PagesからのCORS問題を完全解決：すべてのオリジンを許可
+# CORS対応（GitHub Pagesなどから許可）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,7 +25,7 @@ app.add_middleware(
 LOG_FILE = "comment_log.json"
 JST = timezone(timedelta(hours=9))
 
-# Google Sheets 保存関数
+# Googleスプレッドシート保存関数
 def save_to_spreadsheet(time_str, count):
     try:
         creds_info = json.loads(os.getenv("GCP_CREDENTIALS_JSON"))
@@ -57,11 +57,11 @@ def save_to_spreadsheet(time_str, count):
     except Exception as e:
         print(f"❌ スプレッドシート保存エラー: {e}")
 
-# コメント数取得関数（XMLパース版）
+# コメント数を取得（XML）
 def fetch_comment_count():
     url = "https://ext.nicovideo.jp/api/getthumbinfo/sm125732"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0"
     }
     res = requests.get(url, headers=headers)
     print("✅ レスポンス status:", res.status_code)
@@ -110,6 +110,7 @@ def update_count():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# 🔧 修正版の /data エンドポイント（読み取り → 明示的なjson.loads）
 @app.get("/data")
 def get_data():
     try:
@@ -117,14 +118,17 @@ def get_data():
             return []
 
         with open(LOG_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            content = f.read()
+
+        data = json.loads(content)
+        return data
 
     except json.JSONDecodeError:
         return {"status": "error", "message": "ログファイルが破損しています。"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"サーバー内部エラー: {str(e)}"}
 
-# バックグラウンドで1分ごとにupdate_countを実行
+# 自動更新処理（バックグラウンドで毎分）
 def start_background_update():
     async def loop_update():
         while True:
