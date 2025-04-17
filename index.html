@@ -53,12 +53,10 @@
 
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
-        // 点灯効果：緑 → 黒
         const counter = document.getElementById("latest-count");
         counter.style.color = "green";
         setTimeout(() => { counter.style.color = "black"; }, 1000);
 
-        // 時速計算
         const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
         const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
         const diff = past ? (targetCount - past.count) : 0;
@@ -89,19 +87,26 @@
             }
           });
         }
+
+        // アニメーション初期化：増加量によって時間調整（最大3秒）
+        const totalDiff = Math.abs(targetCount - displayCount);
+        const totalFrames = Math.min(150, totalDiff); // 最大3秒 (50fps x 3)
+        animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
+
       } catch (e) {
         console.error("❌ /data fetch error", e);
         document.getElementById("latest-count").textContent = "取得失敗";
       }
     }
 
+    let animationStep = 1;
+
     function animateCount() {
       const element = document.getElementById("latest-count");
       if (displayCount !== targetCount) {
         const diff = targetCount - displayCount;
-        const step = Math.ceil(Math.abs(diff) / 50); // 50fps = 約1秒
-        displayCount += (diff > 0 ? step : -step);
-        if (Math.abs(displayCount - targetCount) < step) displayCount = targetCount;
+        displayCount += (diff > 0 ? animationStep : -animationStep);
+        if (Math.abs(displayCount - targetCount) < animationStep) displayCount = targetCount;
         element.textContent = displayCount.toLocaleString();
       }
     }
@@ -122,7 +127,8 @@
         document.getElementById("elapsed-seconds").textContent = diff;
       }
 
-      if (now.getSeconds() === 0) {
+      // 秒が00の瞬間だけfetchDataを実行
+      if (now.getSeconds() === 0 && now.getMilliseconds() < 100) {
         fetchData();
       }
 
@@ -130,7 +136,7 @@
     }
 
     fetchData();
-    setInterval(updateClock, 1000 / 50); // 50fps 相当でカウントアニメーション
+    setInterval(updateClock, 1000 / 50);
   </script>
 </body>
 </html>
