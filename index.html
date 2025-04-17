@@ -1,53 +1,58 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ニコニコ動画 コメント数</title>
+  <meta charset="UTF-8" />
+  <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
+      background-color: #f0f0f0;
       padding: 2em;
-      background: #f4f4f4;
     }
     h1 {
       font-size: 2em;
       margin-bottom: 1em;
     }
     .latest {
-      font-size: 2em;
+      font-size: 1.8em;
       color: #e91e63;
-      margin-bottom: 1em;
+      margin: 1em 0;
     }
-    .timestamp {
+    .time-info {
       margin-top: 1em;
-      font-size: 1em;
-      color: #555;
+      font-size: 0.9em;
+      color: #666;
     }
     canvas {
-      max-width: 800px;
+      max-width: 600px;
       margin: 1em auto;
+      background-color: #fff;
+      border-radius: 8px;
+      padding: 1em;
     }
   </style>
 </head>
 <body>
-  <h1>コメント数</h1>
-  <div class="latest" id="latest-count">読み込み中...</div>
-  <div class="timestamp">
-    現在時刻：<span id="now-time">--:--:--</span><br>
-    最終更新：<span id="last-updated">--:--:--</span><br>
-    最終更新から：<span id="elapsed">-- 秒前</span>
+  <h1>コメント数（sm125732）</h1>
+  <div class="latest">
+    最新コメント数：<span id="latest-count">取得中...</span>
   </div>
   <canvas id="commentChart"></canvas>
+  <div class="time-info">
+    <div>現在時刻：<span id="current-time">--:--:--</span></div>
+    <div>最終更新：<span id="last-updated">--:--:--</span></div>
+    <div>更新からの経過秒数：<span id="elapsed-seconds">--</span>秒</div>
+  </div>
 
   <script>
-    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app/data";
-    let latestTimestamp = null;
+    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
+    let lastUpdateTime = null;
 
     async function fetchData() {
       try {
-        const res = await fetch(apiUrl);
+        const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -57,61 +62,69 @@
 
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
-        const latestCount = counts[counts.length - 1];
-        latestTimestamp = labels[labels.length - 1];
+        const latest = counts[counts.length - 1];
+        lastUpdateTime = new Date(labels[labels.length - 1]);
 
-        document.getElementById("latest-count").textContent = latestCount.toLocaleString();
-        document.getElementById("last-updated").textContent = latestTimestamp;
+        document.getElementById("latest-count").textContent = latest;
+        document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
-        const ctx = document.getElementById('commentChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'コメント数の推移',
-              data: counts,
-              borderColor: 'rgba(75,192,192,1)',
-              borderWidth: 2,
-              fill: false,
-              tension: 0.2
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: false
+        const ctx = document.getElementById("commentChart").getContext("2d");
+        if (window.commentChart) {
+          window.commentChart.data.labels = labels;
+          window.commentChart.data.datasets[0].data = counts;
+          window.commentChart.update();
+        } else {
+          window.commentChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "コメント数",
+                data: counts,
+                borderWidth: 2,
+                fill: false,
+                tension: 0.2
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: { beginAtZero: true }
               }
             }
-          }
-        });
-
-      } catch (error) {
-        console.error("Fetch error:", error);
+          });
+        }
+      } catch (e) {
         document.getElementById("latest-count").textContent = "取得失敗";
+        console.error("データ取得エラー:", e);
       }
     }
 
-    function updateClock() {
-      const now = new Date();
-      const nowStr = now.toLocaleString("ja-JP");
-      document.getElementById("now-time").textContent = nowStr;
+    function formatDate(date) {
+      return date.toLocaleString("ja-JP", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      });
+    }
 
-      if (latestTimestamp) {
-        const last = new Date(latestTimestamp);
-        const diffSec = Math.floor((now - last) / 1000);
-        document.getElementById("elapsed").textContent = `${diffSec} 秒前`;
+    function updateClocks() {
+      const now = new Date();
+      document.getElementById("current-time").textContent = formatDate(now);
+
+      if (lastUpdateTime) {
+        const diff = Math.floor((now - lastUpdateTime) / 1000);
+        document.getElementById("elapsed-seconds").textContent = diff;
+      } else {
+        document.getElementById("elapsed-seconds").textContent = "--";
       }
 
       if (now.getSeconds() === 0) {
-        fetchData(); // 秒が00のときだけ取得
+        fetch(`${apiUrl}/update`).then(() => fetchData());
       }
     }
 
-    // 初期化
-    fetchData();
-    setInterval(updateClock, 1000);
+    setInterval(updateClocks, 1000);
+    fetchData(); // 最初の読み込み
   </script>
 </body>
 </html>
