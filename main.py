@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 import os
+import xml.etree.ElementTree as ET
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -48,20 +49,21 @@ def save_to_spreadsheet(time_str, count):
     except Exception as e:
         print(f"❌ スプレッドシート保存エラー: {e}")
 
-# コメント数取得関数
+# コメント数取得関数（XMLパース版）
 def fetch_comment_count():
     url = "https://ext.nicovideo.jp/api/getthumbinfo/sm125732"
-    response = requests.get(url)
-    if response.status_code == 200:
-        text = response.text
-        start = text.find("<comment_num>") + len("<comment_num>")
-        end = text.find("</comment_num>")
-        if start > -1 and end > -1:
-            return int(text[start:end])
-        else:
-            raise Exception("comment_num not found in API response")
-    else:
-        raise Exception("Failed to fetch from Nico API")
+    res = requests.get(url)
+    if res.status_code != 200:
+        raise Exception(f"API request failed: {res.status_code}")
+
+    try:
+        root = ET.fromstring(res.text)
+        comment_num = root.find(".//comment_num")
+        if comment_num is None:
+            raise Exception("comment_num not found in XML")
+        return int(comment_num.text)
+    except ET.ParseError as e:
+        raise Exception(f"XML parse error: {e}")
 
 @app.get("/")
 def root():
@@ -101,5 +103,7 @@ def get_data():
         with open(LOG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
 
+    except json.JSONDecodeError:
+        return {"status": "error", "message": "ログファイルが破損しています。"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
