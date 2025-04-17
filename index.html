@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ニコニコ動画 コメント数</title>
+  <meta charset="UTF-8" />
+  <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -55,6 +55,7 @@
       try {
         const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
+        console.log("✅ /data 取得結果:", data);
 
         if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
           document.getElementById("latest-count").textContent = "取得失敗（データなし）";
@@ -97,7 +98,7 @@
           });
         }
       } catch (error) {
-        console.error("取得失敗:", error);
+        console.error("❌ /data 取得エラー:", error);
         document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
       }
     }
@@ -119,11 +120,11 @@
       }
 
       if (now.getSeconds() === 0) {
-        fetchData();  // 1分ごとに再取得のみ（/updateはRailway or GitHub Actions）
+        fetchData();  // 1分ごとに再取得
       }
     }
 
-    fetchData();                  // 最初の1回
+    fetchData();                    // 初回読み込み
     setInterval(updateClock, 1000); // 毎秒チェック
   </script>
 </body>
