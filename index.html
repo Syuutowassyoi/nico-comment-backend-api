@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>ニコニコ動画 コメント数グラフ</title>
+  <meta charset="UTF-8">
+  <title>ニコニコ動画 コメント数</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -16,102 +16,102 @@
       margin-bottom: 1em;
     }
     .latest {
-      font-size: 1.5em;
-      margin: 1em 0;
-      color: #d63384;
+      font-size: 2em;
+      color: #e91e63;
+      margin-bottom: 1em;
     }
-    .time {
+    .timestamp {
+      margin-top: 1em;
       font-size: 1em;
       color: #555;
     }
     canvas {
-      max-width: 600px;
-      margin: 2em auto;
+      max-width: 800px;
+      margin: 1em auto;
     }
   </style>
 </head>
 <body>
-  <h1>コメント数履歴（sm125732）</h1>
-  <div class="latest">最新コメント数：<span id="latest-count">読み込み中...</span></div>
-  <div class="time">
-    📅 現在時刻：<span id="current-time">--:--:--</span><br />
-    📦 最終更新：<span id="last-updated">--:--:--</span><br />
-    ⏱ 経過秒数：<span id="elapsed">--</span> 秒
+  <h1>コメント数</h1>
+  <div class="latest" id="latest-count">読み込み中...</div>
+  <div class="timestamp">
+    現在時刻：<span id="now-time">--:--:--</span><br>
+    最終更新：<span id="last-updated">--:--:--</span><br>
+    最終更新から：<span id="elapsed">-- 秒前</span>
   </div>
   <canvas id="commentChart"></canvas>
 
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app/data";
-    let chart = null;
-    let lastUpdateTime = null;
+    let latestTimestamp = null;
 
     async function fetchData() {
       try {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+        const res = await fetch(apiUrl);
+        const data = await res.json();
 
         if (!Array.isArray(data) || data.length === 0) {
-          document.getElementById("latest-count").textContent = "取得失敗（データなし）";
+          document.getElementById("latest-count").textContent = "取得失敗";
           return;
         }
 
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
-        const latest = counts[counts.length - 1];
+        const latestCount = counts[counts.length - 1];
+        latestTimestamp = labels[labels.length - 1];
 
-        lastUpdateTime = new Date(labels[labels.length - 1]);
+        document.getElementById("latest-count").textContent = latestCount.toLocaleString();
+        document.getElementById("last-updated").textContent = latestTimestamp;
 
-        document.getElementById("latest-count").textContent = latest;
-        document.getElementById("last-updated").textContent = formatDateTime(lastUpdateTime);
-
-        const ctx = document.getElementById("commentChart").getContext("2d");
-
-        if (chart) chart.destroy();
-        chart = new Chart(ctx, {
-          type: "line",
+        const ctx = document.getElementById('commentChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
           data: {
-            labels,
+            labels: labels,
             datasets: [{
-              label: "コメント数",
+              label: 'コメント数の推移',
               data: counts,
-              borderColor: "blue",
-              backgroundColor: "transparent",
+              borderColor: 'rgba(75,192,192,1)',
               borderWidth: 2,
+              fill: false,
               tension: 0.2
             }]
           },
           options: {
             responsive: true,
             scales: {
-              y: { beginAtZero: true }
+              y: {
+                beginAtZero: false
+              }
             }
           }
         });
 
-      } catch (err) {
-        console.error("取得失敗:", err);
-        document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
+      } catch (error) {
+        console.error("Fetch error:", error);
+        document.getElementById("latest-count").textContent = "取得失敗";
       }
-    }
-
-    function formatDateTime(date) {
-      const pad = n => String(n).padStart(2, "0");
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     }
 
     function updateClock() {
       const now = new Date();
-      document.getElementById("current-time").textContent = formatDateTime(now);
+      const nowStr = now.toLocaleString("ja-JP");
+      document.getElementById("now-time").textContent = nowStr;
 
-      if (lastUpdateTime) {
-        const elapsed = Math.floor((now - lastUpdateTime) / 1000);
-        document.getElementById("elapsed").textContent = elapsed;
+      if (latestTimestamp) {
+        const last = new Date(latestTimestamp);
+        const diffSec = Math.floor((now - last) / 1000);
+        document.getElementById("elapsed").textContent = `${diffSec} 秒前`;
+      }
+
+      if (now.getSeconds() === 0) {
+        fetchData(); // 秒が00のときだけ取得
       }
     }
 
+    // 初期化
     fetchData();
-    setInterval(fetchData, 60000); // 1分ごとに再取得
-    setInterval(updateClock, 1000); // 毎秒現在時刻表示
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
