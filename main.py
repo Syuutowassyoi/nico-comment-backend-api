@@ -60,6 +60,9 @@ def fetch_comment_count():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     res = requests.get(url, headers=headers)
+    print("✅ レスポンス status:", res.status_code)
+    print("✅ レスポンス content:", res.text[:300])  # デバッグ用に先頭300文字だけ表示
+
     if res.status_code != 200:
         raise Exception(f"API request failed: {res.status_code}")
 
