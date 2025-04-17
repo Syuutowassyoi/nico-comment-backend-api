@@ -25,6 +25,11 @@
       font-size: 0.9em;
       color: #666;
     }
+    .error-message {
+      color: red;
+      margin-top: 1em;
+      font-size: 0.9em;
+    }
     canvas {
       max-width: 600px;
       margin: 1em auto;
@@ -45,6 +50,7 @@
     <div>最終更新：<span id="last-updated">--:--:--</span></div>
     <div>更新からの経過秒数：<span id="elapsed-seconds">--</span>秒</div>
   </div>
+  <div class="error-message" id="error-message"></div>
 
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
@@ -52,13 +58,31 @@
     let chart = null;
 
     async function fetchData() {
+      const errorEl = document.getElementById("error-message");
+      errorEl.textContent = ""; // clear
+
       try {
         const res = await fetch(`${apiUrl}/data`);
         const text = await res.text();
         console.log("📦 /data raw:", text);
 
-        const data = JSON.parse(text);
-        if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          errorEl.textContent = "❌ JSONのパースに失敗しました";
+          document.getElementById("latest-count").textContent = "取得失敗（JSONエラー）";
+          return;
+        }
+
+        if (!Array.isArray(data)) {
+          errorEl.textContent = "❌ /data が配列ではありません";
+          document.getElementById("latest-count").textContent = "取得失敗（形式エラー）";
+          return;
+        }
+
+        if (data.length === 0) {
+          errorEl.textContent = "❌ データが空です（まだ取得されていない？）";
           document.getElementById("latest-count").textContent = "取得失敗（データなし）";
           return;
         }
@@ -66,8 +90,14 @@
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
         const latest = counts[counts.length - 1];
-        lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
 
+        if (typeof latest !== "number") {
+          errorEl.textContent = "❌ 最新コメント数が数値ではありません";
+          document.getElementById("latest-count").textContent = "取得失敗（数値エラー）";
+          return;
+        }
+
+        lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
         document.getElementById("latest-count").textContent = latest.toLocaleString();
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
@@ -98,8 +128,10 @@
             }
           });
         }
+
       } catch (error) {
-        console.error("❌ /data 取得エラー:", error);
+        console.error("❌ fetchエラー:", error);
+        errorEl.textContent = "❌ ネットワークエラーやCORSの問題です";
         document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
       }
     }
