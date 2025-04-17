@@ -58,7 +58,6 @@
           mode: "cors"
         });
         const data = await res.json();
-        console.log("✅ /data 取得結果:", data);
 
         if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
           document.getElementById("latest-count").textContent = "取得失敗（データなし）";
@@ -121,14 +120,15 @@
         const diff = Math.floor((now - lastUpdateTime) / 1000);
         document.getElementById("elapsed-seconds").textContent = diff;
       }
-
-      if (now.getSeconds() === 0) {
-        fetchData();
-      }
     }
 
-    fetchData();
-    setInterval(updateClock, 1000);
+    fetchData();                         // 初回取得
+    setInterval(updateClock, 1000);      // 現在時刻と経過秒数を更新
+
+    // ✅ 1分ごとにページを完全リロード
+    setInterval(() => {
+      location.reload();
+    }, 60000);
   </script>
 </body>
 </html>
