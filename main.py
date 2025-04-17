@@ -13,9 +13,11 @@ from googleapiclient.discovery import build
 
 app = FastAPI()
 
+# ✅ GitHub Pagesからのアクセスを広く許可（CORS制限解除）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # または ["https://syuutowassyoi.github.io"]
+    allow_origins=["*"],  # ← ここを変更！
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -63,7 +65,7 @@ def fetch_comment_count():
     }
     res = requests.get(url, headers=headers)
     print("✅ レスポンス status:", res.status_code)
-    print("✅ レスポンス content:", res.text[:300])  # デバッグ用に先頭300文字だけ表示
+    print("✅ レスポンス content:", res.text[:300])
 
     if res.status_code != 200:
         raise Exception(f"API request failed: {res.status_code}")
