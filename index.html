@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background-color: #f0f0f0;
+      background-color: #f9f9f9;
       padding: 2em;
     }
     h1 {
@@ -55,7 +55,7 @@
         const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1]?.count) {
           document.getElementById("latest-count").textContent = "取得失敗";
           return;
         }
@@ -63,7 +63,7 @@
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
         const latest = counts[counts.length - 1];
-        lastUpdateTime = new Date(labels[labels.length - 1]);
+        lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
 
         document.getElementById("latest-count").textContent = latest;
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
@@ -114,17 +114,20 @@
       if (lastUpdateTime) {
         const diff = Math.floor((now - lastUpdateTime) / 1000);
         document.getElementById("elapsed-seconds").textContent = diff;
-      } else {
-        document.getElementById("elapsed-seconds").textContent = "--";
       }
 
       if (now.getSeconds() === 0) {
-        fetch(`${apiUrl}/update`).then(() => fetchData());
+        fetch(`${apiUrl}/update`)
+          .then(res => res.json())
+          .then(() => {
+            fetchData();
+          })
+          .catch(e => console.error("更新失敗:", e));
       }
     }
 
-    setInterval(updateClocks, 1000);
-    fetchData(); // 最初の読み込み
+    fetchData(); // 初回読み込み
+    setInterval(updateClocks, 1000); // 毎秒チェック
   </script>
 </body>
 </html>
