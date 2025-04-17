@@ -24,38 +24,31 @@ app.add_middleware(
 
 LOG_FILE = "comment_log.json"
 JST = timezone(timedelta(hours=9))
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SHEET_NAME = os.getenv("SHEET_NAME", "SHEET1")
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 
-# Googleスプレッドシート保存関数
-def save_to_spreadsheet(time_str, count):
-    try:
-        creds_info = json.loads(os.getenv("GCP_CREDENTIALS_JSON"))
-        creds = service_account.Credentials.from_service_account_info(
-            creds_info, scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
+# Google Sheets 接続
+def get_sheet_service():
+    creds_info = json.loads(os.getenv("GCP_CREDENTIALS_JSON"))
+    creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    service = build("sheets", "v4", credentials=creds)
+    return service.spreadsheets()
 
-        service = build("sheets", "v4", credentials=creds)
-        sheet = service.spreadsheets()
-
-        spreadsheet_id = os.getenv("SPREADSHEET_ID")
-        sheet_name = os.getenv("SHEET_NAME")
-
-        utc_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        body = {
-            "values": [[utc_time_str, count]]
-        }
-
-        result = sheet.values().append(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A:B",
-            valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS",
-            body=body
-        ).execute()
-
-        print(f"✅ スプレッドシートに書き込み成功: {result}")
-    except Exception as e:
-        print(f"❌ スプレッドシート保存エラー: {e}")
+# 空いてる列ペアを探す（A&B, C&D, E&F...）
+def find_available_column_pair(sheet):
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i in range(0, len(alphabet), 2):
+        col1 = alphabet[i]
+        col2 = alphabet[i+1] if i+1 < len(alphabet) else None
+        if not col2:
+            continue
+        range_ = f"{SHEET_NAME}!{col1}:{col1}"
+        result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_).execute()
+        row_count = len(result.get("values", []))
+        if row_count < 18000:
+            return col1, col2, row_count + 1
+    raise Exception("すべての列が埋まっています！")
 
 # コメント数を取得（XML）
 def fetch_comment_count():
@@ -89,42 +82,45 @@ def update_count():
         count = fetch_comment_count()
         time_str = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
 
-        if os.path.exists(LOG_FILE):
-            try:
-                with open(LOG_FILE, "r", encoding="utf-8") as f:
-                    log = json.load(f)
-            except json.JSONDecodeError:
-                log = []
-        else:
-            log = []
+        sheet = get_sheet_service()
+        col1, col2, row = find_available_column_pair(sheet)
+        cell_range = f"{SHEET_NAME}!{col1}{row}:{col2}{row}"
+        values = [[time_str, count]]
 
-        log.append({"time": time_str, "count": count})
-
-        with open(LOG_FILE, "w", encoding="utf-8") as f:
-            json.dump(log, f, ensure_ascii=False, indent=2)
-
-        save_to_spreadsheet(time_str, count)
+        sheet.values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=cell_range,
+            valueInputOption="RAW",
+            body={"values": values}
+        ).execute()
 
         return {"status": "success", "count": count}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# 🔧 修正版の /data エンドポイント（読み取り → 明示的なjson.loads）
 @app.get("/data")
 def get_data():
     try:
-        if not os.path.exists(LOG_FILE):
-            return []
+        sheet = get_sheet_service()
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        entries = []
 
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
+        for i in range(0, len(alphabet), 2):
+            col1 = alphabet[i]
+            col2 = alphabet[i+1] if i+1 < len(alphabet) else None
+            if not col2:
+                continue
+            cell_range = f"{SHEET_NAME}!{col1}:{col2}"
+            result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=cell_range).execute()
+            rows = result.get("values", [])
+            for row in rows:
+                if len(row) >= 2:
+                    entries.append({"time": row[0], "count": int(row[1])})
 
-        data = json.loads(content)
-        return data
+        entries.sort(key=lambda x: x["time"])
+        return entries[-30:]
 
-    except json.JSONDecodeError:
-        return {"status": "error", "message": "ログファイルが破損しています。"}
     except Exception as e:
         return {"status": "error", "message": f"サーバー内部エラー: {str(e)}"}
 
