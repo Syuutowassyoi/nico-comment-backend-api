@@ -116,7 +116,7 @@ def get_data():
             rows = result.get("values", [])
             for row in rows:
                 if len(row) >= 2:
-                    entries.append({"time": row[0], "count": int(row[1])})
+                    entries.append({"time": row[0], "count": int(row[1].replace(',', ''))})
 
         entries.sort(key=lambda x: x["time"])
         return entries[-30:]
