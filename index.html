@@ -7,14 +7,18 @@
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2em; background: #f9f9f9; }
     h1 { font-size: 2em; margin-bottom: 1em; }
-    .latest { font-size: 1.8em; color: #e91e63; margin: 1em 0; }
+    .latest {
+      font-size: 1.8em;
+      margin: 1em 0;
+      transition: color 1s ease;
+    }
     canvas { max-width: 600px; margin: 1em auto; background: white; border-radius: 10px; padding: 1em; }
     .time-info { font-size: 0.9em; color: #555; margin-top: 1em; }
   </style>
 </head>
 <body>
   <h1>コメント数（sm125732）</h1>
-  <div class="latest">最新コメント数：<span id="latest-count">取得中...</span></div>
+  <div class="latest" id="latest-count">取得中...</div>
   <canvas id="commentChart"></canvas>
   <div class="time-info">
     <div>現在時刻：<span id="current-time">--:--:--</span></div>
@@ -28,12 +32,13 @@
     let lastUpdateTime = null;
     let chart = null;
     let latestData = [];
+    let displayCount = 0;
+    let targetCount = 0;
 
     async function fetchData() {
       try {
         const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
-        console.log("✅ /data 取得結果:", data);
 
         if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
           document.getElementById("latest-count").textContent = "取得失敗";
@@ -43,16 +48,20 @@
         latestData = data;
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
-        const latest = counts[counts.length - 1];
+        targetCount = counts[counts.length - 1];
         lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
 
-        document.getElementById("latest-count").textContent = latest.toLocaleString();
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
+
+        // 点灯効果：緑 → 黒
+        const counter = document.getElementById("latest-count");
+        counter.style.color = "green";
+        setTimeout(() => { counter.style.color = "black"; }, 1000);
 
         // 時速計算
         const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
         const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
-        const diff = past ? (latest - past.count) : 0;
+        const diff = past ? (targetCount - past.count) : 0;
         document.getElementById("hourly-diff").textContent = diff;
 
         const ctx = document.getElementById("commentChart").getContext("2d");
@@ -86,6 +95,17 @@
       }
     }
 
+    function animateCount() {
+      const element = document.getElementById("latest-count");
+      if (displayCount !== targetCount) {
+        const diff = targetCount - displayCount;
+        const step = Math.ceil(Math.abs(diff) / 50); // 50fps = 約1秒
+        displayCount += (diff > 0 ? step : -step);
+        if (Math.abs(displayCount - targetCount) < step) displayCount = targetCount;
+        element.textContent = displayCount.toLocaleString();
+      }
+    }
+
     function formatDate(date) {
       return date.toLocaleString("ja-JP", {
         year: "numeric", month: "2-digit", day: "2-digit",
@@ -105,10 +125,12 @@
       if (now.getSeconds() === 0) {
         fetchData();
       }
+
+      animateCount();
     }
 
     fetchData();
-    setInterval(updateClock, 1000);
+    setInterval(updateClock, 1000 / 50); // 50fps 相当でカウントアニメーション
   </script>
 </body>
 </html>
