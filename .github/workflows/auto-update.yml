@@ -1,13 +1,15 @@
-name: Auto Update Nico Comment
+name: Auto Update
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # 毎分
-  workflow_dispatch:
+    - cron: '*/1 * * * *'  # 毎分実行
+  workflow_dispatch:       # 手動実行も可能にする
 
 jobs:
-  update:
+  call-update-endpoint:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Call /update endpoint
-        run: curl -s https://nico-comment-backend-api-production.up.railway.app/update
+      - name: Call update endpoint
+        run: |
+          curl -s -X POST https://your-backend-url.com/update
