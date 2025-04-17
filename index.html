@@ -54,9 +54,10 @@
     async function fetchData() {
       try {
         const res = await fetch(`${apiUrl}/data`);
-        const data = await res.json();
-        console.log("✅ /data 取得結果:", data);
+        const text = await res.text();
+        console.log("📦 /data raw:", text);
 
+        const data = JSON.parse(text);
         if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
           document.getElementById("latest-count").textContent = "取得失敗（データなし）";
           return;
