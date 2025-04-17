@@ -34,6 +34,8 @@
     let latestData = [];
     let displayCount = 0;
     let targetCount = 0;
+    let animationStep = 1;
+    let lastFetchedSecond = -1;
 
     async function fetchData() {
       try {
@@ -88,18 +90,14 @@
           });
         }
 
-        // アニメーション初期化：増加量によって時間調整（最大3秒）
         const totalDiff = Math.abs(targetCount - displayCount);
-        const totalFrames = Math.min(150, totalDiff); // 最大3秒 (50fps x 3)
+        const totalFrames = Math.min(150, totalDiff);
         animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
-
       } catch (e) {
         console.error("❌ /data fetch error", e);
         document.getElementById("latest-count").textContent = "取得失敗";
       }
     }
-
-    let animationStep = 1;
 
     function animateCount() {
       const element = document.getElementById("latest-count");
@@ -120,6 +118,7 @@
 
     function updateClock() {
       const now = new Date();
+      const currentSecond = now.getSeconds();
       document.getElementById("current-time").textContent = formatDate(now);
 
       if (lastUpdateTime) {
@@ -127,15 +126,15 @@
         document.getElementById("elapsed-seconds").textContent = diff;
       }
 
-      // 秒が00の瞬間だけfetchDataを実行
-      if (now.getSeconds() === 0 && now.getMilliseconds() < 100) {
-        fetchData();
+      if (currentSecond !== lastFetchedSecond) {
+        lastFetchedSecond = currentSecond;
+        if (currentSecond === 0) fetchData();
       }
 
       animateCount();
     }
 
-    fetchData();
+    fetchData().then(() => { displayCount = targetCount; });
     setInterval(updateClock, 1000 / 50);
   </script>
 </body>
