@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import json
 import os
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 LOG_FILE = "comment_log.json"
+JST = timezone(timedelta(hours=9))
 
 # Google Sheets 保存関数
 def save_to_spreadsheet(time_str, count):
@@ -73,7 +74,7 @@ def root():
 def update_count():
     try:
         count = fetch_comment_count()
-        time_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        time_str = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
 
         # JSONファイルの読み込み・更新
         if os.path.exists(LOG_FILE):
