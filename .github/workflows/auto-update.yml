@@ -2,7 +2,8 @@ name: Auto Update Nico Comment
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # 1分ごとに実行（UTC）
+    - cron: '*/1 * * * *'  # 毎分
+  workflow_dispatch:
 
 jobs:
   update:
