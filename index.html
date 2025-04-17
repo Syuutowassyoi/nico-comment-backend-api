@@ -64,9 +64,8 @@
       try {
         const res = await fetch(`${apiUrl}/data`);
         const text = await res.text();
-        console.log("📦 /data raw:", text);
-
         let data;
+
         try {
           data = JSON.parse(text);
         } catch (e) {
@@ -125,7 +124,7 @@
 
       } catch (error) {
         console.error("❌ fetchエラー:", error);
-        errorEl.textContent = "❌ ネットワークエラーやCORSの問題です";
+        errorEl.textContent = "❌ 通信エラーまたはCORSの問題です";
         document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
       }
     }
@@ -147,12 +146,12 @@
       }
 
       if (now.getSeconds() === 0) {
-        fetchData();  // 毎分再取得
+        fetchData();  // 毎分更新
       }
     }
 
-    fetchData();                    // 初回読み込み
-    setInterval(updateClock, 1000); // 毎秒更新
+    fetchData();
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
