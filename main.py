@@ -13,10 +13,10 @@ from googleapiclient.discovery import build
 
 app = FastAPI()
 
-# ✅ GitHub Pagesからのアクセスを広く許可（CORS制限解除）
+# ✅ GitHub PagesからのCORS問題を完全解決：すべてのオリジンを許可
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ← ここを変更！
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
