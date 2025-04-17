@@ -35,7 +35,6 @@ def save_to_spreadsheet(time_str, count):
         spreadsheet_id = os.getenv("SPREADSHEET_ID")
         sheet_name = os.getenv("SHEET_NAME")
 
-        # JST時刻をスプレッドシートにはUTCとして書き込む（Google側表示はJSTになる）
         utc_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         body = {
@@ -57,12 +56,15 @@ def save_to_spreadsheet(time_str, count):
 # コメント数取得関数（XMLパース版）
 def fetch_comment_count():
     url = "https://ext.nicovideo.jp/api/getthumbinfo/sm125732"
-    res = requests.get(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    res = requests.get(url, headers=headers)
     if res.status_code != 200:
         raise Exception(f"API request failed: {res.status_code}")
 
     try:
-        root = ET.fromstring(res.text)
+        root = ET.fromstring(res.content)
         comment_num = root.find(".//comment_num")
         if comment_num is None:
             raise Exception("comment_num not found in XML")
@@ -80,10 +82,12 @@ def update_count():
         count = fetch_comment_count()
         time_str = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
 
-        # JSONファイルの読み込み・更新
         if os.path.exists(LOG_FILE):
-            with open(LOG_FILE, "r", encoding="utf-8") as f:
-                log = json.load(f)
+            try:
+                with open(LOG_FILE, "r", encoding="utf-8") as f:
+                    log = json.load(f)
+            except json.JSONDecodeError:
+                log = []
         else:
             log = []
 
