@@ -93,6 +93,11 @@
         const totalDiff = Math.abs(targetCount - displayCount);
         const totalFrames = Math.min(150, totalDiff);
         animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
+
+        // ✅ 初回表示を即時描画
+        document.getElementById("latest-count").textContent = targetCount.toLocaleString();
+        displayCount = targetCount;
+
       } catch (e) {
         console.error("❌ /data fetch error", e);
         document.getElementById("latest-count").textContent = "取得失敗";
@@ -134,7 +139,7 @@
       animateCount();
     }
 
-    fetchData().then(() => { displayCount = targetCount; });
+    fetchData();
     setInterval(updateClock, 1000 / 50);
   </script>
 </body>
