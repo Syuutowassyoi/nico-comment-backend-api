@@ -59,7 +59,7 @@
 
     async function fetchData() {
       const errorEl = document.getElementById("error-message");
-      errorEl.textContent = ""; // clear
+      errorEl.textContent = "";
 
       try {
         const res = await fetch(`${apiUrl}/data`);
@@ -75,14 +75,8 @@
           return;
         }
 
-        if (!Array.isArray(data)) {
-          errorEl.textContent = "❌ /data が配列ではありません";
-          document.getElementById("latest-count").textContent = "取得失敗（形式エラー）";
-          return;
-        }
-
-        if (data.length === 0) {
-          errorEl.textContent = "❌ データが空です（まだ取得されていない？）";
+        if (!Array.isArray(data) || data.length === 0) {
+          errorEl.textContent = "❌ データが空です（取得前かも）";
           document.getElementById("latest-count").textContent = "取得失敗（データなし）";
           return;
         }
@@ -153,12 +147,12 @@
       }
 
       if (now.getSeconds() === 0) {
-        fetchData();  // 1分ごとに再取得
+        fetchData();  // 毎分再取得
       }
     }
 
     fetchData();                    // 初回読み込み
-    setInterval(updateClock, 1000); // 毎秒チェック
+    setInterval(updateClock, 1000); // 毎秒更新
   </script>
 </body>
 </html>
