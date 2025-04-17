@@ -1,69 +1,46 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background-color: #f9f9f9;
-      padding: 2em;
-    }
-    h1 {
-      font-size: 2em;
-      margin-bottom: 1em;
-    }
-    .latest {
-      font-size: 1.8em;
-      color: #e91e63;
-      margin: 1em 0;
-    }
-    .time-info {
-      margin-top: 1em;
-      font-size: 0.9em;
-      color: #666;
-    }
-    canvas {
-      max-width: 600px;
-      margin: 1em auto;
-      background-color: #fff;
-      border-radius: 8px;
-      padding: 1em;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2em; background: #f9f9f9; }
+    h1 { font-size: 2em; margin-bottom: 1em; }
+    .latest { font-size: 1.8em; color: #e91e63; margin: 1em 0; }
+    canvas { max-width: 600px; margin: 1em auto; background: white; border-radius: 10px; padding: 1em; }
+    .time-info { font-size: 0.9em; color: #555; margin-top: 1em; }
   </style>
 </head>
 <body>
   <h1>コメント数（sm125732）</h1>
-  <div class="latest">
-    最新コメント数：<span id="latest-count">取得中...</span>
-  </div>
+  <div class="latest">最新コメント数：<span id="latest-count">取得中...</span></div>
   <canvas id="commentChart"></canvas>
   <div class="time-info">
     <div>現在時刻：<span id="current-time">--:--:--</span></div>
     <div>最終更新：<span id="last-updated">--:--:--</span></div>
     <div>更新からの経過秒数：<span id="elapsed-seconds">--</span>秒</div>
+    <div>📈 1時間の増加数：<span id="hourly-diff">--</span>件</div>
   </div>
 
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
     let lastUpdateTime = null;
     let chart = null;
+    let latestData = [];
 
     async function fetchData() {
       try {
-        const res = await fetch(`${apiUrl}/data`, {
-          method: "GET",
-          mode: "cors"
-        });
+        const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
+        console.log("✅ /data 取得結果:", data);
 
         if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
-          document.getElementById("latest-count").textContent = "取得失敗（データなし）";
+          document.getElementById("latest-count").textContent = "取得失敗";
           return;
         }
 
+        latestData = data;
         const labels = data.map(d => d.time);
         const counts = data.map(d => d.count);
         const latest = counts[counts.length - 1];
@@ -72,6 +49,12 @@
         document.getElementById("latest-count").textContent = latest.toLocaleString();
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
+        // 時速計算
+        const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
+        const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
+        const diff = past ? (latest - past.count) : 0;
+        document.getElementById("hourly-diff").textContent = diff;
+
         const ctx = document.getElementById("commentChart").getContext("2d");
         if (chart) {
           chart.data.labels = labels;
@@ -79,29 +62,27 @@
           chart.update();
         } else {
           chart = new Chart(ctx, {
-            type: "line",
+            type: 'line',
             data: {
               labels: labels,
               datasets: [{
-                label: "コメント数",
+                label: 'コメント数',
                 data: counts,
                 borderWidth: 2,
-                borderColor: "blue",
+                borderColor: 'blue',
                 fill: false,
                 tension: 0.2
               }]
             },
             options: {
               responsive: true,
-              scales: {
-                y: { beginAtZero: false }
-              }
+              scales: { y: { beginAtZero: false } }
             }
           });
         }
-      } catch (error) {
-        console.error("❌ /data 取得エラー:", error);
-        document.getElementById("latest-count").textContent = "取得失敗（通信エラー）";
+      } catch (e) {
+        console.error("❌ /data fetch error", e);
+        document.getElementById("latest-count").textContent = "取得失敗";
       }
     }
 
@@ -120,15 +101,14 @@
         const diff = Math.floor((now - lastUpdateTime) / 1000);
         document.getElementById("elapsed-seconds").textContent = diff;
       }
+
+      if (now.getSeconds() === 0) {
+        fetchData();
+      }
     }
 
-    fetchData();                         // 初回取得
-    setInterval(updateClock, 1000);      // 現在時刻と経過秒数を更新
-
-    // ✅ 1分ごとにページを完全リロード
-    setInterval(() => {
-      location.reload();
-    }, 60000);
+    fetchData();
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
