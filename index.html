@@ -219,9 +219,11 @@
         const duration = 1000;
         const from = displayCount;
         const to = targetCount;
-        let animating = true;
+        let animating = false;
 
         function step(now) {
+          if (animating) return;
+          animating = true;
           if (!animating) return;
           const progress = Math.min((now - start) / duration, 1);
           const value = Math.round(from + (to - from) * progress);
