@@ -214,6 +214,10 @@
 
     function animateCount() {
   if (displayCount !== targetCount) {
+    const previousDisplay = document.getElementById("latest-count").textContent;
+    const numericDisplay = parseInt(previousDisplay.replace(/,/g, ''));
+    if (numericDisplay === targetCount) return;
+
     const start = performance.now();
     const duration = 1000;
     const from = displayCount;
@@ -226,6 +230,12 @@
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
+        displayCount = to;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+} else {
         displayCount = to;
       }
     }
