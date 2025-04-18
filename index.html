@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
+  <!-- <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet"> -->
   
   <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
@@ -286,9 +286,12 @@ function formatDate(date) {
 }
 </script>
 <script>
-  refreshData().then(() => {
-    firstLoad = false;
+  document.getElementById("latest-count").textContent = "読込中...";
+  fetchLatest().then(() => {
     animateCount();
+    return fetchGraphData();
+  }).then(() => {
+    firstLoad = false;
   });
   setInterval(updateClock, 1000);
 </script>
