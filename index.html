@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <!-- <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet"> -->
+  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
   
   <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
@@ -83,7 +83,7 @@
       <canvas id="commentChart"></canvas>
     </div>
     <div class="right">
-      <div id="latest-count" class="flip-number" style="font-family: 'Digital-7 Mono', monospace;">取得中...</div>
+      <div id="latest-count" class="flip-number" style="font-family: 'New X Digital tfb Light', monospace;">取得中...</div>
       <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
       <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
       <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -212,31 +212,17 @@ let firstLoad = true;
     }
 
     function animateCount() {
-  if (firstLoad) {
-    displayCount = targetCount;
-    document.getElementById("latest-count").textContent = targetCount.toLocaleString();
-    firstLoad = false;
-    return;
+  const el = document.getElementById("latest-count");
+  const prev = parseInt(el.textContent.replace(/,/g, ''));
+  if (prev !== targetCount) {
+    el.textContent = targetCount.toLocaleString();
+    el.style.transition = 'color 0.3s';
+    el.style.color = 'limegreen';
+    setTimeout(() => {
+      el.style.color = '';
+    }, 300);
   }
-
-  if (displayCount !== targetCount) {
-    const start = performance.now();
-    const duration = 1000;
-    const from = displayCount;
-    const to = targetCount;
-
-    function step(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const value = Math.round(from + (to - from) * progress);
-      document.getElementById("latest-count").textContent = value.toLocaleString();
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        displayCount = to;
-      }
-    }
-    requestAnimationFrame(step);
-  }
+  displayCount = targetCount;
 }
 
 
