@@ -7,11 +7,46 @@
   <style>
     body { font-family: sans-serif; margin: 0; background: #f9f9f9; }
     h1 { font-size: 2em; margin: 1em; text-align: center; }
-    .container { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 1em; gap: 2em; }
-    .left, .right { background: white; border-radius: 10px; padding: 1em; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    .left { max-width: 600px; flex: 1; }
-    .right { min-width: 250px; flex: 0.5; text-align: center; }
-    .latest { font-size: 1.8em; transition: color 1s ease; margin-bottom: 0.5em; }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      padding: 1em;
+      gap: 2em;
+    }
+    .left, .right {
+      background: white;
+      border-radius: 10px;
+      padding: 1em;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .left {
+      max-width: 600px;
+      flex: 1;
+    }
+    .right {
+      min-width: 250px;
+      flex: 0.5;
+      text-align: center;
+    }
+    .flip-number {
+      display: inline-block;
+      perspective: 1000px;
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .flip-digit {
+      display: inline-block;
+      transform-origin: center top;
+      transform: rotateX(90deg);
+      animation: flip 0.6s ease forwards;
+    }
+    @keyframes flip {
+      0% { transform: rotateX(90deg); opacity: 0; }
+      100% { transform: rotateX(0deg); opacity: 1; }
+    }
     .refresh-button {
       padding: 0.4em 1em;
       font-size: 1em;
@@ -26,6 +61,15 @@
     .time-info { font-size: 0.9em; color: #555; margin-top: 1em; }
     .time-info div { margin-bottom: 0.3em; }
     .link-info { font-size: 0.9em; margin-top: 1em; color: #333; text-align: center; }
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .left, .right {
+        width: 90%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -35,7 +79,7 @@
       <canvas id="commentChart"></canvas>
     </div>
     <div class="right">
-      <div class="latest" id="latest-count">取得中...</div>
+      <div id="latest-count" class="flip-number">取得中...</div>
       <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
       <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
       <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -51,8 +95,8 @@
     🔗 そすてのさんの支援者別集計サイト →
     <a href="https://sosuteno.com/jien/index.html" target="_blank">https://sosuteno.com/jien/index.html</a>
   </div>
-
   <script>
+    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
     let displayCount = 0;
     let targetCount = 0;
     let animationStep = 1;
@@ -60,67 +104,64 @@
     let lastFetchedSecond = -1;
     let remainingCountDisplay = 0;
 
+    function updateFlipNumber(id, number) {
+      const container = document.getElementById(id);
+      container.innerHTML = '';
+      number.toLocaleString().split('').forEach(char => {
+        const span = document.createElement('span');
+        span.className = 'flip-digit';
+        span.textContent = char;
+        container.appendChild(span);
+      });
+    }
+
     async function fetchLatest() {
       try {
-        const res = await fetch("https://nico-comment-backend-api-production.up.railway.app/latest");
+        const res = await fetch(`${apiUrl}/latest`);
         const data = await res.json();
-
         if (!data || !data.count) {
-          document.getElementById("latest-count").textContent = "取得失敗";
+          updateFlipNumber("latest-count", 0);
           return;
         }
-
         targetCount = data.count;
         lastUpdateTime = new Date(data.time.replace(" ", "T"));
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
-
-        const counter = document.getElementById("latest-count");
-        counter.style.color = "green";
-        setTimeout(() => { counter.style.color = "black"; }, 1000);
-
-        const totalDiff = Math.abs(targetCount - displayCount);
-        const totalFrames = Math.min(150, totalDiff);
-        animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
+        const diff = Math.abs(targetCount - displayCount);
+        const frames = Math.min(150, diff);
+        animationStep = Math.max(1, Math.ceil(diff / frames));
       } catch (e) {
         console.error("❌ /latest fetch error", e);
-        document.getElementById("latest-count").textContent = "取得失敗";
       }
     }
 
     async function fetchGraphData() {
       try {
-        const res = await fetch("https://nico-comment-backend-api-production.up.railway.app/data");
+        const res = await fetch(`${apiUrl}/data`);
         const data = await res.json();
-
         if (!Array.isArray(data)) {
           console.error("❌ /data fetch error: invalid response", data);
           return;
         }
         const now = new Date();
-
         const labels = data.map(d => {
           const t = new Date(d.time.replace(" ", "T"));
           const minutesAgo = Math.round((now - t) / 60000);
           return minutesAgo === 0 ? "now" : `${minutesAgo}min.`;
         });
-
         const counts = data.map(d => d.count);
 
         if (lastUpdateTime) {
-  const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
-  const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
-  const diff = past ? (targetCount - past.count) : 0;
-  document.getElementById("hourly-diff").textContent = diff;
-} else {
-  document.getElementById("hourly-diff").textContent = "--";
-}
+          const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
+          const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
+          const diff = past ? (targetCount - past.count) : 0;
+          document.getElementById("hourly-diff").textContent = diff;
+        } else {
+          document.getElementById("hourly-diff").textContent = "--";
+        }
 
         const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
         const remaining = nextMilestone - targetCount;
-        animateValue("remaining-comments", remainingCountDisplay, remaining, 1000, val => {
-          document.getElementById("remaining-comments").textContent = `総合${(nextMilestone / 1000000)}Mまで残り${val.toLocaleString()}コメント`;
-        });
-        remainingCountDisplay = remaining;
+        updateFlipNumber("remaining-comments", `総合${nextMilestone / 1000000}Mまで残り${remaining.toLocaleString()}コメント`);
 
         const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         const data3h = data.filter(d => new Date(d.time.replace(" ", "T")) >= threeHoursAgo);
@@ -131,10 +172,7 @@
           const rate = delta / ((new Date(end.time.replace(" ", "T")) - new Date(start.time.replace(" ", "T"))) / 1000);
           const secondsToGoal = remaining / rate;
           const estimated = new Date(now.getTime() + secondsToGoal * 1000);
-          const formatted = formatDate(estimated);
-          animateValue("estimated-time", 0, 100, 1000, () => {
-            document.getElementById("estimated-time").textContent = `到達予想時刻: ${formatted}`;
-          });
+          document.getElementById("estimated-time").textContent = `到達予想時刻: ${formatDate(estimated)}`;
         }
 
         const ctx = document.getElementById("commentChart").getContext("2d");
@@ -176,35 +214,23 @@
     }
 
     function animateCount() {
-  const element = document.getElementById("latest-count");
-  if (displayCount !== targetCount) {
-    const start = performance.now();
-    const duration = 1000; // 1秒
-    const from = displayCount;
-    const to = targetCount;
-    function step(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const value = Math.round(from + (to - from) * progress);
-      element.textContent = value.toLocaleString();
-      if (progress < 1) {
+      if (displayCount !== targetCount) {
+        const start = performance.now();
+        const duration = 1000;
+        const from = displayCount;
+        const to = targetCount;
+        function step(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          const value = Math.round(from + (to - from) * progress);
+          updateFlipNumber("latest-count", value);
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            displayCount = to;
+          }
+        }
         requestAnimationFrame(step);
-      } else {
-        displayCount = to;
       }
-    }
-    requestAnimationFrame(step);
-  }
-}
-
-    function animateValue(id, from, to, duration, callback) {
-      const start = performance.now();
-      function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        const value = Math.round(from + (to - from) * progress);
-        callback(value);
-        if (progress < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
     }
 
     function formatDate(date) {
@@ -214,13 +240,18 @@
       });
     }
 
-    function refreshData(button = null) {
+    async function refreshData(button = null) {
+      if (button && button.disabled) return;
       if (button) {
         button.disabled = true;
         setTimeout(() => { button.disabled = false; }, 3000);
       }
-      fetchLatest();
-      fetchGraphData();
+      try {
+        await fetchLatest();
+        await fetchGraphData();
+      } catch (e) {
+        console.error("❌ refreshData error", e);
+      }
     }
 
     function updateClock() {
