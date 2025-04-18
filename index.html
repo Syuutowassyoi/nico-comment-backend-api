@@ -247,34 +247,4 @@ function formatDate(date) {
   } catch (e) {
     console.error("❌ refreshData error", e);
   }
-}, 3000);
-      }
-      try {
-        await fetchLatest();
-        await fetchGraphData();
-      } catch (e) {
-        console.error("❌ refreshData error", e);
-      }
-    }
-
-    function updateClock() {
-  const now = new Date();
-  document.getElementById("current-time").textContent = formatDate(now);
-  if (lastUpdateTime) {
-    const diff = Math.floor((now - lastUpdateTime) / 1000);
-    document.getElementById("elapsed-seconds").textContent = diff;
-  }
 }
-</script>
-<script>
-  document.getElementById("latest-count").textContent = "読込中...";
-  fetchLatest().then(() => {
-    animateCount();
-    return fetchGraphData();
-  }).then(() => {
-    firstLoad = false;
-  });
-  setInterval(updateClock, 1000);
-</script>
-</body>
-</html>
