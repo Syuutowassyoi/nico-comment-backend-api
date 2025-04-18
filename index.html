@@ -6,7 +6,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ニコニコ動画 コメント数グラフ</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">function updateClock() {
+  const now = new Date();
+  document.getElementById("current-time").textContent = formatDate(now);
+}
+setInterval(updateClock, 1000);
+</script>
   <style>
     body { font-family: sans-serif; margin: 0; background: #f9f9f9; }
     h1 { font-size: 2em; margin: 1em; text-align: center; }
