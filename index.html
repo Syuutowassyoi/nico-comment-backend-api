@@ -277,11 +277,13 @@ function formatDate(date) {
     document.getElementById("elapsed-seconds").textContent = diff;
   }
 
-  if (seconds === 0) {
-    refreshData().then(() => animateCount());
-  } else {
+ if (seconds === 0) {
+  refreshData().then(() => {
+    firstLoad = false;
     animateCount();
-  }
+  });
+} else {
+  animateCount();
 }
 
     refreshData().then(() => animateCount());
