@@ -178,12 +178,14 @@
       const value = Math.round(from + (to - from) * progress);
       element.textContent = value.toLocaleString();
       if (progress < 1) {
-        displayCount = value;
         requestAnimationFrame(step);
       } else {
         displayCount = to;
       }
     }
+    requestAnimationFrame(step);
+  }
+}
     requestAnimationFrame(step);
   }
 }
