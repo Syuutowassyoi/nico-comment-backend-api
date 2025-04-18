@@ -31,7 +31,7 @@
     <div class="latest" id="latest-count">取得中...</div>
     <button class="refresh-button" onclick="refreshData()">更新</button>
   </div>
-  <div class="estimate" id="remaining-comments">残りコメント数: -- 件</div>
+  <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
   <div class="estimate" id="estimated-time">到達予想時刻: --</div>
   <canvas id="commentChart"></canvas>
   <div class="time-info">
@@ -104,7 +104,7 @@
         const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
         const remaining = nextMilestone - targetCount;
         animateValue("remaining-comments", remainingCountDisplay, remaining, 1000, val => {
-          document.getElementById("remaining-comments").textContent = `残りコメント数: ${val.toLocaleString()} 件`;
+          document.getElementById("remaining-comments").textContent = `総合${(nextMilestone / 1000000)}Mまで残り${val.toLocaleString()}コメント`;
         });
         remainingCountDisplay = remaining;
 
