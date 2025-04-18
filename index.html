@@ -109,22 +109,8 @@
     let remainingCountDisplay = 0;
 
     function updateFlipNumber(id, number) {
-  const container = document.getElementById(id);
-  const newDigits = number.toLocaleString().split('');
-  const oldDigits = container.textContent.replace(/,/g, '').split('');
-
-  container.innerHTML = '';
-
-  newDigits.forEach((char, i) => {
-    const span = document.createElement('span');
-    span.className = 'flip-digit';
-    span.textContent = char;
-
-    if (char !== oldDigits[i]) {
-      span.style.animation = 'flip 0.6s ease forwards';
-    } else {
-      span.style.animation = 'none';
-    }
+  document.getElementById(id).textContent = number.toLocaleString();
+}
 
     container.appendChild(span);
   });
@@ -133,7 +119,7 @@
         const res = await fetch(`${apiUrl}/latest`);
         const data = await res.json();
         if (!data || !data.count) {
-          updateFlipNumber("latest-count", 0);
+          document.getElementById("latest-count").textContent = "0";
           return;
         }
         targetCount = data.count;
@@ -174,7 +160,7 @@
 
         const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
         const remaining = nextMilestone - targetCount;
-        updateFlipNumber("remaining-comments", `総合${nextMilestone / 1000000}Mまで残り${remaining.toLocaleString()}コメント`);
+        document.getElementById("remaining-comments").textContent = `総合${nextMilestone / 1000000}Mまで残り${remaining.toLocaleString()}コメント`;
 
         const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         const data3h = data.filter(d => new Date(d.time.replace(" ", "T")) >= threeHoursAgo);
@@ -235,7 +221,7 @@
         function step(now) {
           const progress = Math.min((now - start) / duration, 1);
           const value = Math.round(from + (to - from) * progress);
-          updateFlipNumber("latest-count", value);
+          document.getElementById("latest-count").textContent = value.toLocaleString();
           if (progress < 1) {
             requestAnimationFrame(step);
           } else {
