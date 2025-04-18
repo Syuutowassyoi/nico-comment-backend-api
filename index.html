@@ -37,27 +37,42 @@
     let animationStep = 1;
     let lastFetchedSecond = -1;
 
-    async function fetchData() {
+    async function fetchLatest() {
       try {
-        const res = await fetch(`${apiUrl}/data`);
+        const res = await fetch(`${apiUrl}/latest`);
         const data = await res.json();
 
-        if (!Array.isArray(data) || data.length === 0 || !data[data.length - 1].count) {
+        if (!data || !data.count) {
           document.getElementById("latest-count").textContent = "取得失敗";
           return;
         }
 
-        latestData = data;
-        const labels = data.map(d => d.time);
-        const counts = data.map(d => d.count);
-        targetCount = counts[counts.length - 1];
-        lastUpdateTime = new Date(labels[labels.length - 1].replace(" ", "T"));
+        targetCount = data.count;
+        lastUpdateTime = new Date(data.time.replace(" ", "T"));
 
         document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
 
         const counter = document.getElementById("latest-count");
         counter.style.color = "green";
         setTimeout(() => { counter.style.color = "black"; }, 1000);
+
+        const totalDiff = Math.abs(targetCount - displayCount);
+        const totalFrames = Math.min(150, totalDiff);
+        animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
+      } catch (e) {
+        console.error("❌ /latest fetch error", e);
+        document.getElementById("latest-count").textContent = "取得失敗";
+      }
+    }
+
+    async function fetchGraphData() {
+      try {
+        const res = await fetch(`${apiUrl}/data`);
+        const data = await res.json();
+        latestData = data;
+
+        const labels = data.map(d => d.time);
+        const counts = data.map(d => d.count);
 
         const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
         const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
@@ -89,18 +104,8 @@
             }
           });
         }
-
-        const totalDiff = Math.abs(targetCount - displayCount);
-        const totalFrames = Math.min(150, totalDiff);
-        animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
-
-        // ✅ 初回表示を即時描画
-        document.getElementById("latest-count").textContent = targetCount.toLocaleString();
-        displayCount = targetCount;
-
       } catch (e) {
         console.error("❌ /data fetch error", e);
-        document.getElementById("latest-count").textContent = "取得失敗";
       }
     }
 
@@ -133,13 +138,17 @@
 
       if (currentSecond !== lastFetchedSecond) {
         lastFetchedSecond = currentSecond;
-        if (currentSecond === 0) fetchData();
+        if (currentSecond === 0) {
+          fetchLatest();
+          fetchGraphData();
+        }
       }
 
       animateCount();
     }
 
-    fetchData();
+    fetchLatest();
+    fetchGraphData();
     setInterval(updateClock, 1000 / 50);
   </script>
 </body>
