@@ -83,7 +83,7 @@
       <canvas id="commentChart"></canvas>
     </div>
     <div class="right">
-      <div id="latest-count" class="flip-number" style="font-family: 'New X Digital tfb Light', monospace;">取得中...</div>
+      <div id="latest-count" class="flip-number" style="font-family: 'Digital-7 Mono', monospace;">取得中...</div>
       <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
       <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
       <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -220,10 +220,6 @@ let firstLoad = true;
   }
 
   if (displayCount !== targetCount) {
-    const previousDisplay = document.getElementById("latest-count").textContent;
-    const numericDisplay = parseInt(previousDisplay.replace(/,/g, ''));
-    if (numericDisplay === targetCount) return;
-
     const start = performance.now();
     const duration = 1000;
     const from = displayCount;
@@ -239,7 +235,6 @@ let firstLoad = true;
         displayCount = to;
       }
     }
-
     requestAnimationFrame(step);
   }
 }
