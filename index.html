@@ -269,16 +269,20 @@ function formatDate(date) {
     }
 
     function updateClock() {
-      const now = new Date();
-      const seconds = now.getSeconds();
-      document.getElementById("current-time").textContent = formatDate(now);
-      if (lastUpdateTime) {
-        const diff = Math.floor((now - lastUpdateTime) / 1000);
-        document.getElementById("elapsed-seconds").textContent = diff;
-      }
-      if (seconds === 0) refreshData();
-      animateCount();
-    }
+  const now = new Date();
+  const seconds = now.getSeconds();
+  document.getElementById("current-time").textContent = formatDate(now);
+  if (lastUpdateTime) {
+    const diff = Math.floor((now - lastUpdateTime) / 1000);
+    document.getElementById("elapsed-seconds").textContent = diff;
+  }
+
+  if (seconds === 0) {
+    refreshData().then(() => animateCount());
+  } else {
+    animateCount();
+  }
+}
 
     refreshData();
     setInterval(updateClock, 1000);
