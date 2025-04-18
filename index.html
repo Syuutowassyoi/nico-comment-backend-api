@@ -106,10 +106,14 @@
 
         const counts = data.map(d => d.count);
 
-        const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
-        const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
-        const diff = past ? (targetCount - past.count) : 0;
-        document.getElementById("hourly-diff").textContent = diff;
+        if (lastUpdateTime) {
+  const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
+  const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
+  const diff = past ? (targetCount - past.count) : 0;
+  document.getElementById("hourly-diff").textContent = diff;
+} else {
+  document.getElementById("hourly-diff").textContent = "--";
+}
 
         const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
         const remaining = nextMilestone - targetCount;
