@@ -118,12 +118,14 @@
   newDigits.forEach((char, i) => {
     const span = document.createElement('span');
     span.className = 'flip-digit';
+    span.textContent = char;
+
     if (char !== oldDigits[i]) {
       span.style.animation = 'flip 0.6s ease forwards';
     } else {
       span.style.animation = 'none';
     }
-    span.textContent = char;
+
     container.appendChild(span);
   });
 } else {
@@ -132,6 +134,7 @@
     span.textContent = char;
     container.appendChild(span);
   });
+};
 });
     }
 
