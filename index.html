@@ -16,6 +16,11 @@ function updateClock() {
   document.getElementById("current-time").textContent = formatDate(now);
 }
 setInterval(updateClock, 1000);
+function updateClock() {
+  const now = new Date();
+  document.getElementById("current-time").textContent = formatDate(now);
+}
+setInterval(updateClock, 1000);
 </script>
   <style>
     body { font-family: sans-serif; margin: 0; background: #f9f9f9; }
@@ -32,7 +37,7 @@ setInterval(updateClock, 1000);
     .left, .right {
       background: white;
       border-radius: 10px;
-      padding: 1em;
+      padding: 1em;https://sosuteno.com/jien/Live/index2.html
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     .left {
@@ -103,8 +108,14 @@ setInterval(updateClock, 1000);
         <div>最終更新：<span id="last-updated">--:--:--</span></div>
         <div>更新からの経過秒数：<span id="elapsed-seconds">--</span>秒</div>
         <div>📈 1時間の増加数：<span id="hourly-diff">--</span>件</div>
+      <div class="link-info">
+        🔗 分集計サイト →
+        <a href="https://sosuteno.com/jien/Live/index2.html" target="_blank">
+          https://sosuteno.com/jien/Live/index2.html
+        </a>
       </div>
     </div>
+  </div>
   </div>
   <div class="link-info">
     🔗 そすてのさんの支援者別集計サイト →
