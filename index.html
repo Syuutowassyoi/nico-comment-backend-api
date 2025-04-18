@@ -51,8 +51,6 @@
   50% { transform: rotateX(-90deg); opacity: 0; }
   100% { transform: rotateX(0deg); opacity: 1; }
 }
-      100% { transform: rotateX(0deg); opacity: 1; }
-    }
     .refresh-button {
       padding: 0.4em 1em;
       font-size: 1em;
@@ -277,24 +275,22 @@ function formatDate(date) {
     document.getElementById("elapsed-seconds").textContent = diff;
   }
 
- if (seconds === 0) {
-  refreshData().then(() => {
-    firstLoad = false;
-    animateCount();
-  });
-} else {
-  animateCount();
-}
-
-    
-    setInterval(updateClock, 1000);
-<\/script>
-  <script>
+  if (seconds === 0) {
     refreshData().then(() => {
       firstLoad = false;
       animateCount();
     });
-    setInterval(updateClock, 1000);
-  </script>
+  } else {
+    animateCount();
+  }
+}
+</script>
+<script>
+  refreshData().then(() => {
+    firstLoad = false;
+    animateCount();
+  });
+  setInterval(updateClock, 1000);
+</script>
 </body>
 </html>
