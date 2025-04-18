@@ -91,6 +91,11 @@
       try {
         const res = await fetch("https://nico-comment-backend-api-production.up.railway.app/data");
         const data = await res.json();
+
+        if (!Array.isArray(data)) {
+          console.error("❌ /data fetch error: invalid response", data);
+          return;
+        }
         const now = new Date();
 
         const labels = data.map(d => {
