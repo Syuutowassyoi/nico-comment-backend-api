@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb-light" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/digital-7" rel="stylesheet">
   <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
@@ -85,7 +86,7 @@
       <canvas id="commentChart"></canvas>
     </div>
     <div class="right">
-      <div id="latest-count" class="flip-number" style="font-family: 'New X Digital tfb', monospace;">取得中...</div>
+      <div id="latest-count" class="flip-number" style="font-family: 'New X Digital tfb Light', monospace;">取得中...</div>
       <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
       <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
       <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -218,7 +219,10 @@
         const duration = 1000;
         const from = displayCount;
         const to = targetCount;
+        let animating = true;
+
         function step(now) {
+          if (!animating) return;
           const progress = Math.min((now - start) / duration, 1);
           const value = Math.round(from + (to - from) * progress);
           document.getElementById("latest-count").textContent = value.toLocaleString();
@@ -226,6 +230,7 @@
             requestAnimationFrame(step);
           } else {
             displayCount = to;
+            animating = false;
           }
         }
         requestAnimationFrame(step);
