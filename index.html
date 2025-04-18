@@ -14,6 +14,7 @@
     }
     canvas { max-width: 600px; margin: 1em auto; background: white; border-radius: 10px; padding: 1em; }
     .time-info { font-size: 0.9em; color: #555; margin-top: 1em; }
+    .link-info { font-size: 0.9em; margin-top: 1em; color: #333; }
   </style>
 </head>
 <body>
@@ -25,6 +26,10 @@
     <div>最終更新：<span id="last-updated">--:--:--</span></div>
     <div>更新からの経過秒数：<span id="elapsed-seconds">--</span>秒</div>
     <div>📈 1時間の増加数：<span id="hourly-diff">--</span>件</div>
+  </div>
+  <div class="link-info">
+    🔗 そすてのさんの支援者別集計サイト →
+    <a href="https://sosuteno.com/jien/index.html" target="_blank">https://sosuteno.com/jien/index.html</a>
   </div>
 
   <script>
@@ -71,7 +76,13 @@
         const data = await res.json();
         latestData = data;
 
-        const labels = data.map(d => d.time);
+        const now = new Date();
+        const labels = data.map(d => {
+          const t = new Date(d.time.replace(" ", "T"));
+          const minutesAgo = Math.round((now - t) / 60000);
+          return minutesAgo === 0 ? "now" : `${minutesAgo}min.`;
+        });
+
         const counts = data.map(d => d.count);
 
         const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
@@ -100,7 +111,15 @@
             },
             options: {
               responsive: true,
-              scales: { y: { beginAtZero: false } }
+              scales: {
+                y: { beginAtZero: false },
+                x: {
+                  title: {
+                    display: true,
+                    text: '時間（何分前）'
+                  }
+                }
+              }
             }
           });
         }
