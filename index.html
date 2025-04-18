@@ -104,6 +104,7 @@
   <script>
     const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
     let displayCount = 0;
+let firstLoad = true;
     let targetCount = 0;
     let animationStep = 1;
     let lastUpdateTime = null;
@@ -213,6 +214,13 @@
     }
 
     function animateCount() {
+  if (firstLoad) {
+    displayCount = targetCount;
+    document.getElementById("latest-count").textContent = targetCount.toLocaleString();
+    firstLoad = false;
+    return;
+  }
+
   if (displayCount !== targetCount) {
     const previousDisplay = document.getElementById("latest-count").textContent;
     const numericDisplay = parseInt(previousDisplay.replace(/,/g, ''));
