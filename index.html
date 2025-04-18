@@ -128,23 +128,7 @@
 
     container.appendChild(span);
   });
-} else {
-      span.style.animation = 'none';
-    }
-
-    container.appendChild(span);
-  });
-} else {
-      span.style.animation = 'none';
-    }
-    span.textContent = char;
-    container.appendChild(span);
-  });
-};
-});
-    }
-
-    async function fetchLatest() {
+}async function fetchLatest() {
       try {
         const res = await fetch(`${apiUrl}/latest`);
         const data = await res.json();
