@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <!-- <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet"> -->
+  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js">function updateClock() {
+  const now = new Date();
+  const currentTimeEl = document.getElementById("current-time");
+  if (currentTimeEl) {
+    currentTimeEl.textContent = formatDate(now);
+  }
+}
+setInterval(updateClock, 1000);
+function updateClock() {
   const now = new Date();
   const currentTimeEl = document.getElementById("current-time");
   if (currentTimeEl) {
@@ -260,10 +268,7 @@ function formatDate(date) {
       fetchLatest(),
       fetchGraphData()
     ]);
-    await fetch(`${apiUrl}/update`); // スプレッドシート更新
-    await fetchLatest(); // 最新コメント数取得
     animateCount(); // 表示更新
-    await fetchGraphData(); // グラフ描画など
   } catch (e) {
     console.error("❌ refreshData error", e);
   }
