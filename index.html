@@ -10,7 +10,7 @@
   const now = new Date();
   const currentTimeEl = document.getElementById("current-time");
   if (currentTimeEl) {
-    currentTimeEl.textContent = formatDate(now);
+    currentTimeEl.textContent = now.toLocaleTimeString("ja-JP");
   }
 }
 setInterval(updateClock, 1000);
