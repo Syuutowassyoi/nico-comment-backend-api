@@ -44,7 +44,11 @@
       animation: flip 0.6s ease forwards;
     }
     @keyframes flip {
-      0% { transform: rotateX(90deg); opacity: 0; }
+  0% { transform: rotateX(0deg); opacity: 1; }
+  49% { transform: rotateX(90deg); opacity: 0; }
+  50% { transform: rotateX(-90deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
       100% { transform: rotateX(0deg); opacity: 1; }
     }
     .refresh-button {
@@ -105,14 +109,23 @@
     let remainingCountDisplay = 0;
 
     function updateFlipNumber(id, number) {
-      const container = document.getElementById(id);
-      container.innerHTML = '';
-      number.toLocaleString().split('').forEach(char => {
-        const span = document.createElement('span');
-        span.className = 'flip-digit';
-        span.textContent = char;
-        container.appendChild(span);
-      });
+  const container = document.getElementById(id);
+  const oldDigits = container.textContent.replace(/,/g, '').padStart(number.toString().length, ' ').split('');
+  const newDigits = number.toLocaleString().split('');
+  container.innerHTML = '';
+
+  newDigits.forEach((char, i) => {
+    const span = document.createElement('span');
+    span.className = 'flip-digit';
+    if (char !== oldDigits[i]) {
+      span.style.animation = 'flip 0.6s ease forwards';
+    } else {
+      span.style.animation = 'none';
+    }
+    span.textContent = char;
+    container.appendChild(span);
+  });
+});
     }
 
     async function fetchLatest() {
