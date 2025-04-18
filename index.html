@@ -7,11 +7,8 @@
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2em; background: #f9f9f9; }
     h1 { font-size: 2em; margin-bottom: 1em; }
-    .latest {
-      font-size: 1.8em;
-      margin: 1em 0;
-      transition: color 1s ease;
-    }
+    .latest { font-size: 1.8em; margin: 1em 0; transition: color 1s ease; }
+    .estimate { font-size: 1em; margin: 0.5em 0; color: #444; }
     canvas { max-width: 600px; margin: 1em auto; background: white; border-radius: 10px; padding: 1em; }
     .time-info { font-size: 0.9em; color: #555; margin-top: 1em; }
     .link-info { font-size: 0.9em; margin-top: 1em; color: #333; }
@@ -20,6 +17,8 @@
 <body>
   <h1>コメント数（sm125732）</h1>
   <div class="latest" id="latest-count">取得中...</div>
+  <div class="estimate" id="remaining-comments">残りコメント数: -- 件</div>
+  <div class="estimate" id="estimated-time">到達予想時刻: --</div>
   <canvas id="commentChart"></canvas>
   <div class="time-info">
     <div>現在時刻：<span id="current-time">--:--:--</span></div>
@@ -41,6 +40,8 @@
     let targetCount = 0;
     let animationStep = 1;
     let lastFetchedSecond = -1;
+    let remainingCountDisplay = 0;
+    let estimateTimeDisplay = "";
 
     async function fetchLatest() {
       try {
@@ -85,10 +86,35 @@
 
         const counts = data.map(d => d.count);
 
+        // 📈 1時間増加数
         const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
         const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
         const diff = past ? (targetCount - past.count) : 0;
         document.getElementById("hourly-diff").textContent = diff;
+
+        // 🔢 キリ番処理
+        const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
+        const remaining = nextMilestone - targetCount;
+        animateValue("remaining-comments", remainingCountDisplay, remaining, 1000, val => {
+          document.getElementById("remaining-comments").textContent = `残りコメント数: ${val.toLocaleString()} 件`;
+        });
+        remainingCountDisplay = remaining;
+
+        // 🕒 予測時刻
+        const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        const data3h = data.filter(d => new Date(d.time.replace(" ", "T")) >= threeHoursAgo);
+        if (data3h.length >= 2) {
+          const start = data3h[0];
+          const end = data3h[data3h.length - 1];
+          const delta = end.count - start.count;
+          const rate = delta / ((new Date(end.time.replace(" ", "T")) - new Date(start.time.replace(" ", "T"))) / 1000); // 件/秒
+          const secondsToGoal = remaining / rate;
+          const estimated = new Date(now.getTime() + secondsToGoal * 1000);
+          const formatted = formatDate(estimated);
+          animateValue("estimated-time", 0, 100, 1000, () => {
+            document.getElementById("estimated-time").textContent = `到達予想時刻: ${formatted}`;
+          });
+        }
 
         const ctx = document.getElementById("commentChart").getContext("2d");
         if (chart) {
@@ -138,6 +164,17 @@
       }
     }
 
+    function animateValue(id, from, to, duration, callback) {
+      const start = performance.now();
+      function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const value = Math.round(from + (to - from) * progress);
+        callback(value);
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
     function formatDate(date) {
       return date.toLocaleString("ja-JP", {
         year: "numeric", month: "2-digit", day: "2-digit",
@@ -166,6 +203,7 @@
       animateCount();
     }
 
+    // ✅ 最初に表示時も即時取得
     fetchLatest();
     fetchGraphData();
     setInterval(updateClock, 1000 / 50);
