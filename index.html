@@ -2,8 +2,7 @@
 <html lang="ja">
 <head>
   <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
-  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb-light" rel="stylesheet">
-  <link href="https://fonts.cdnfonts.com/css/digital-7" rel="stylesheet">
+  
   <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -214,32 +213,25 @@
     }
 
     function animateCount() {
-      if (displayCount !== targetCount) {
-        const start = performance.now();
-        const duration = 1000;
-        const from = displayCount;
-        const to = targetCount;
-        let animating = false;
+  if (displayCount !== targetCount) {
+    const start = performance.now();
+    const duration = 1000;
+    const from = displayCount;
+    const to = targetCount;
 
-        function step(now) {
-          if (animating) return;
-          animating = true;
-          if (!animating) return;
-          const progress = Math.min((now - start) / duration, 1);
-          const value = Math.round(from + (to - from) * progress);
-          document.getElementById("latest-count").textContent = value.toLocaleString();
-          if (progress < 1) {
-            requestAnimationFrame(step);
-          } else {
-            displayCount = to;
-            animating = false;
-          }
-        }
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const value = Math.round(from + (to - from) * progress);
+      document.getElementById("latest-count").textContent = value.toLocaleString();
+      if (progress < 1) {
         requestAnimationFrame(step);
+      } else {
+        displayCount = to;
       }
     }
-
-    function formatDate(date) {
+    requestAnimationFrame(step);
+  }
+function formatDate(date) {
       return date.toLocaleString("ja-JP", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit"
