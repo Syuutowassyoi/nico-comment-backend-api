@@ -167,13 +167,26 @@
     }
 
     function animateCount() {
-      const element = document.getElementById("latest-count");
-      if (displayCount !== targetCount) {
-        const diff = targetCount - displayCount;
-        displayCount += (diff > 0 ? animationStep : -animationStep);
-        if (Math.abs(displayCount - targetCount) < animationStep) displayCount = targetCount;
-        element.textContent = displayCount.toLocaleString();
+  const element = document.getElementById("latest-count");
+  if (displayCount !== targetCount) {
+    const start = performance.now();
+    const duration = 1000; // 1秒
+    const from = displayCount;
+    const to = targetCount;
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const value = Math.round(from + (to - from) * progress);
+      element.textContent = value.toLocaleString();
+      if (progress < 1) {
+        displayCount = value;
+        requestAnimationFrame(step);
+      } else {
+        displayCount = to;
       }
+    }
+    requestAnimationFrame(step);
+  }
+}
     }
 
     function animateValue(id, from, to, duration, callback) {
