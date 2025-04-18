@@ -234,10 +234,20 @@ function formatDate(date) {
     }
 
     async function refreshData(button = null) {
-      if (button && button.disabled) return;
-      if (button) {
-        button.disabled = true;
-        setTimeout(() => { button.disabled = false; }, 3000);
+  if (button && button.disabled) return;
+  if (button) {
+    button.disabled = true;
+    setTimeout(() => { button.disabled = false; }, 3000);
+  }
+  try {
+    await fetch(`${apiUrl}/update`); // スプレッドシート更新
+    await fetchLatest(); // 最新コメント数取得
+    animateCount(); // 表示更新
+    await fetchGraphData(); // グラフ描画など
+  } catch (e) {
+    console.error("❌ refreshData error", e);
+  }
+}, 3000);
       }
       try {
         await fetchLatest();
@@ -249,20 +259,10 @@ function formatDate(date) {
 
     function updateClock() {
   const now = new Date();
-  const seconds = now.getSeconds();
   document.getElementById("current-time").textContent = formatDate(now);
   if (lastUpdateTime) {
     const diff = Math.floor((now - lastUpdateTime) / 1000);
     document.getElementById("elapsed-seconds").textContent = diff;
-  }
-
-  if (seconds === 0) {
-    refreshData().then(() => {
-      firstLoad = false;
-      animateCount();
-    });
-  } else {
-    animateCount();
   }
 }
 </script>
