@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <link href="https://fonts.cdnfonts.com/css/new-x-digital-tfb" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/digital-7" rel="stylesheet">
   <meta charset="UTF-8">
   <title>ニコニコ動画 コメント数グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -83,7 +85,7 @@
       <canvas id="commentChart"></canvas>
     </div>
     <div class="right">
-      <div id="latest-count" class="flip-number">取得中...</div>
+      <div id="latest-count" class="flip-number" style="font-family: 'New X Digital tfb', monospace;">取得中...</div>
       <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
       <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
       <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -112,9 +114,7 @@
   document.getElementById(id).textContent = number.toLocaleString();
 }
 
-    container.appendChild(span);
-  });
-}async function fetchLatest() {
+    async function fetchLatest() {
       try {
         const res = await fetch(`${apiUrl}/latest`);
         const data = await res.json();
