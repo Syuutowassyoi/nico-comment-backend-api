@@ -7,7 +7,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2em; background: #f9f9f9; }
     h1 { font-size: 2em; margin-bottom: 1em; }
-    .latest-wrapper { display: flex; align-items: center; justify-content: center; gap: 1em; margin-bottom: 1em; }
+    .top-info { margin-bottom: 1em; display: flex; flex-direction: column; align-items: center; gap: 0.5em; }
     .latest { font-size: 1.8em; transition: color 1s ease; }
     .refresh-button {
       padding: 0.3em 0.8em;
@@ -27,9 +27,9 @@
 </head>
 <body>
   <h1>コメント数（sm125732）</h1>
-  <div class="latest-wrapper">
+  <div class="top-info">
     <div class="latest" id="latest-count">取得中...</div>
-    <button class="refresh-button" onclick="refreshData()">更新</button>
+    <button class="refresh-button" id="refresh-button" onclick="refreshData(this)">更新</button>
   </div>
   <div class="estimate" id="remaining-comments">総合--Mまで残り--コメント</div>
   <div class="estimate" id="estimated-time">到達予想時刻: --</div>
@@ -46,170 +46,14 @@
   </div>
 
   <script>
-    const apiUrl = "https://nico-comment-backend-api-production.up.railway.app";
-    let lastUpdateTime = null;
-    let chart = null;
-    let latestData = [];
-    let displayCount = 0;
-    let targetCount = 0;
-    let animationStep = 1;
-    let remainingCountDisplay = 0;
-
-    async function fetchLatest() {
-      try {
-        const res = await fetch(`${apiUrl}/latest`);
-        const data = await res.json();
-
-        if (!data || !data.count) {
-          document.getElementById("latest-count").textContent = "取得失敗";
-          return;
-        }
-
-        targetCount = data.count;
-        lastUpdateTime = new Date(data.time.replace(" ", "T"));
-        document.getElementById("last-updated").textContent = formatDate(lastUpdateTime);
-
-        const counter = document.getElementById("latest-count");
-        counter.style.color = "green";
-        setTimeout(() => { counter.style.color = "black"; }, 1000);
-
-        const totalDiff = Math.abs(targetCount - displayCount);
-        const totalFrames = Math.min(150, totalDiff);
-        animationStep = Math.max(1, Math.ceil(totalDiff / totalFrames));
-      } catch (e) {
-        console.error("❌ /latest fetch error", e);
-        document.getElementById("latest-count").textContent = "取得失敗";
+    function refreshData(button = null) {
+      if (button) {
+        button.disabled = true;
+        setTimeout(() => { button.disabled = false; }, 3000); // 3秒後に再有効化
       }
-    }
-
-    async function fetchGraphData() {
-      try {
-        const res = await fetch(`${apiUrl}/data`);
-        const data = await res.json();
-        latestData = data;
-
-        const now = new Date();
-        const labels = data.map(d => {
-          const t = new Date(d.time.replace(" ", "T"));
-          const minutesAgo = Math.round((now - t) / 60000);
-          return minutesAgo === 0 ? "now" : `${minutesAgo}min.`;
-        });
-
-        const counts = data.map(d => d.count);
-        const oneHourAgo = new Date(lastUpdateTime.getTime() - 60 * 60 * 1000);
-        const past = data.find(d => new Date(d.time.replace(" ", "T")) >= oneHourAgo);
-        const diff = past ? (targetCount - past.count) : 0;
-        document.getElementById("hourly-diff").textContent = diff;
-
-        const nextMilestone = Math.ceil(targetCount / 1000000) * 1000000;
-        const remaining = nextMilestone - targetCount;
-        animateValue("remaining-comments", remainingCountDisplay, remaining, 1000, val => {
-          document.getElementById("remaining-comments").textContent = `総合${(nextMilestone / 1000000)}Mまで残り${val.toLocaleString()}コメント`;
-        });
-        remainingCountDisplay = remaining;
-
-        const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        const data3h = data.filter(d => new Date(d.time.replace(" ", "T")) >= threeHoursAgo);
-        if (data3h.length >= 2) {
-          const start = data3h[0];
-          const end = data3h[data3h.length - 1];
-          const delta = end.count - start.count;
-          const rate = delta / ((new Date(end.time.replace(" ", "T")) - new Date(start.time.replace(" ", "T"))) / 1000);
-          const secondsToGoal = remaining / rate;
-          const estimated = new Date(now.getTime() + secondsToGoal * 1000);
-          const formatted = formatDate(estimated);
-          animateValue("estimated-time", 0, 100, 1000, () => {
-            document.getElementById("estimated-time").textContent = `到達予想時刻: ${formatted}`;
-          });
-        }
-
-        const ctx = document.getElementById("commentChart").getContext("2d");
-        if (chart) {
-          chart.data.labels = labels;
-          chart.data.datasets[0].data = counts;
-          chart.update();
-        } else {
-          chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: labels,
-              datasets: [{
-                label: 'コメント数',
-                data: counts,
-                borderWidth: 2,
-                borderColor: 'blue',
-                fill: false,
-                tension: 0.2
-              }]
-            },
-            options: {
-              responsive: true,
-              scales: {
-                y: { beginAtZero: false },
-                x: {
-                  title: {
-                    display: true,
-                    text: '時間（何分前）'
-                  }
-                }
-              }
-            }
-          });
-        }
-      } catch (e) {
-        console.error("❌ /data fetch error", e);
-      }
-    }
-
-    function animateCount() {
-      const element = document.getElementById("latest-count");
-      if (displayCount !== targetCount) {
-        const diff = targetCount - displayCount;
-        displayCount += (diff > 0 ? animationStep : -animationStep);
-        if (Math.abs(displayCount - targetCount) < animationStep) displayCount = targetCount;
-        element.textContent = displayCount.toLocaleString();
-      }
-    }
-
-    function animateValue(id, from, to, duration, callback) {
-      const start = performance.now();
-      function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        const value = Math.round(from + (to - from) * progress);
-        callback(value);
-        if (progress < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-
-    function formatDate(date) {
-      return date.toLocaleString("ja-JP", {
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", second: "2-digit"
-      });
-    }
-
-    function refreshData() {
       fetchLatest();
       fetchGraphData();
     }
-
-    function updateClock() {
-      const now = new Date();
-      const seconds = now.getSeconds();
-      document.getElementById("current-time").textContent = formatDate(now);
-      if (lastUpdateTime) {
-        const diff = Math.floor((now - lastUpdateTime) / 1000);
-        document.getElementById("elapsed-seconds").textContent = diff;
-      }
-      if (seconds === 0) {
-        refreshData();
-      }
-      animateCount();
-    }
-
-    refreshData();
-    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
